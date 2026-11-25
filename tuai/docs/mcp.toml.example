@@ -1,0 +1,10 @@
+# Example for MCP clients supporting this TOML format (including Codex).
+# Other clients: configure a Streamable HTTP MCP server using the same URL.
+# Knowledge (kb_*) and remote memory (memory_*) share this endpoint.
+[mcp_servers.tuai]
+url = "http://192.168.6.162:30881/mcp"
+# CPU indexing of long documents can take more than the default 60 seconds.
+tool_timeout_sec = 300
+# For a locally running JAR instead: http://127.0.0.1:8080/mcp
+# Set this environment variable in the client process if the server enables authentication.
+# bearer_token_env_var = "TUAI_API_KEY"

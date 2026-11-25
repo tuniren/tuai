@@ -1,0 +1,52 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {"name": "tuai-embeddings", "namespace": "tuai"},
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "selector": {"matchLabels": {"app": "tuai-embeddings"}},
+        "strategy": {"type": "Recreate"},
+        "template": {
+          "metadata": {"labels": {"app": "tuai-embeddings"}},
+          "spec": {
+            "automountServiceAccountToken": false,
+            "nodeSelector": {"kubernetes.io/hostname": "k8s-6-162"},
+            "securityContext": {"runAsNonRoot": true, "runAsUser": 10001, "runAsGroup": 10001},
+            "containers": [
+              {
+                "name": "ollama",
+                "image": "IMAGE_TO_REPLACE",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [{"name": "http", "containerPort": 11434}],
+                "resources": {"requests": {"cpu": "2", "memory": "4Gi"}, "limits": {"cpu": "12", "memory": "8Gi"}},
+                "startupProbe": {"httpGet": {"path": "/api/version", "port": "http"}, "periodSeconds": 5, "failureThreshold": 30},
+                "readinessProbe": {"httpGet": {"path": "/api/version", "port": "http"}, "periodSeconds": 10},
+                "livenessProbe": {"tcpSocket": {"port": "http"}, "periodSeconds": 20},
+                "securityContext": {"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true, "capabilities": {"drop": ["ALL"]}},
+                "volumeMounts": [{"name": "models", "mountPath": "/models"}, {"name": "tmp", "mountPath": "/tmp"}]
+              }
+            ],
+            "volumes": [{"name": "models", "hostPath": {"path": "/var/lib/tuai/ollama/models", "type": "Directory"}}, {"name": "tmp", "emptyDir": {"sizeLimit": "512Mi"}}]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {"name": "tuai-embeddings", "namespace": "tuai"},
+      "spec": {"type": "ClusterIP", "selector": {"app": "tuai-embeddings"}, "ports": [{"name": "http", "port": 11434, "targetPort": "http"}]}
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {"name": "tuai-embeddings-internal", "namespace": "tuai"},
+      "spec": {"podSelector": {"matchLabels": {"app": "tuai-embeddings"}}, "policyTypes": ["Ingress"], "ingress": [{"from": [{"podSelector": {"matchLabels": {"app": "tuai"}}}], "ports": [{"protocol": "TCP", "port": 11434}]}]}
+    }
+  ]
+}

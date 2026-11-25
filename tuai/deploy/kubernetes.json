@@ -1,0 +1,68 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {"name": "tuai", "labels": {"app.kubernetes.io/part-of": "tuai"}}
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {"name": "tuai", "namespace": "tuai", "labels": {"app": "tuai"}},
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 5,
+        "selector": {"matchLabels": {"app": "tuai"}},
+        "strategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": 0, "maxSurge": 1}},
+        "template": {
+          "metadata": {"labels": {"app": "tuai"}},
+          "spec": {
+            "automountServiceAccountToken": false,
+            "nodeSelector": {"kubernetes.io/hostname": "k8s-6-162"},
+            "terminationGracePeriodSeconds": 40,
+            "securityContext": {"runAsNonRoot": true, "runAsUser": 10001, "runAsGroup": 10001, "fsGroup": 10001},
+            "containers": [
+              {
+                "name": "tuai",
+                "image": "IMAGE_TO_REPLACE",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [{"name": "http", "containerPort": 8080}],
+                "envFrom": [{"configMapRef": {"name": "tuai-config"}}, {"secretRef": {"name": "tuai-credentials"}}],
+                "resources": {"requests": {"cpu": "250m", "memory": "256Mi"}, "limits": {"cpu": "2", "memory": "1Gi"}},
+                "startupProbe": {"httpGet": {"path": "/health", "port": "http"}, "periodSeconds": 5, "failureThreshold": 36, "timeoutSeconds": 3},
+                "readinessProbe": {"httpGet": {"path": "/health", "port": "http"}, "periodSeconds": 10, "failureThreshold": 3, "timeoutSeconds": 3},
+                "livenessProbe": {"tcpSocket": {"port": "http"}, "periodSeconds": 20, "failureThreshold": 3, "timeoutSeconds": 3},
+                "securityContext": {"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true, "capabilities": {"drop": ["ALL"]}},
+                "volumeMounts": [{"name": "tmp", "mountPath": "/tmp"}]
+              }
+            ],
+            "volumes": [{"name": "tmp", "emptyDir": {"sizeLimit": "128Mi"}}]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {"name": "tuai", "namespace": "tuai", "labels": {"app": "tuai"}},
+      "spec": {
+        "type": "NodePort",
+        "externalTrafficPolicy": "Cluster",
+        "selector": {"app": "tuai"},
+        "ports": [{"name": "http", "port": 8080, "targetPort": "http", "nodePort": 30881, "protocol": "TCP"}]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {"name": "tuai-allow-all-clients", "namespace": "tuai"},
+      "spec": {
+        "podSelector": {"matchLabels": {"app": "tuai"}},
+        "policyTypes": ["Ingress"],
+        "ingress": [{"ports": [{"protocol": "TCP", "port": 8080}]}]
+      }
+    }
+  ]
+}

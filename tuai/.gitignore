@@ -1,0 +1,10 @@
+**/target/
+.idea/
+*.iml
+.tools/
+.env
+application-local.yml
+application-local.yaml
+*.log
+__pycache__/
+deploy/settings.local.json

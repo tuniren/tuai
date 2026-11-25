@@ -1,0 +1,29 @@
+# Local configuration and credentials
+**/.env
+**/.env.*
+!**/.env.example
+**/application-local.yml
+**/application-local.yaml
+**/settings.local.json
+**/*.pem
+**/*.key
+
+# Dependencies, generated output and local tools
+**/node_modules/
+**/target/
+**/dist/
+**/.tools/
+**/__pycache__/
+**/*.py[cod]
+**/*.tsbuildinfo
+**/*.log
+**/playwright-report/
+**/test-results/
+
+# Editor and OS files
+**/.idea/
+**/.vscode/
+**/*.iml
+.DS_Store
+Thumbs.db
+Desktop.ini

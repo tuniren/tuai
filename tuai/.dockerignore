@@ -1,0 +1,4 @@
+**
+!Dockerfile
+!target/
+!target/tuai-0.1.0-SNAPSHOT.jar
